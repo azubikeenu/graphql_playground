@@ -32,11 +32,16 @@ const Mutation = {
     if (!postExists || !userExists) throw new Error('Post or user not found');
     const comment = { id: uuid(), ...commentInput };
     db.comments.push(comment);
-    pubsub.publish(`comment ${post}`, { comment });
+    pubsub.publish(`comment ${post}`, {
+      comment: {
+        mutation: 'CREATED',
+        data: comment,
+      },
+    });
     return comment;
   },
 
-  deleteUser(parent, { id }, { db ,pubsub }, info) {
+  deleteUser(parent, { id }, { db }, info) {
     const userIndex = db.users.findIndex((user) => user.id === id);
     if (userIndex === -1) throw new Error('User not found');
     const [user] = db.users.splice(userIndex, 1);
@@ -73,30 +78,60 @@ const Mutation = {
     return user;
   },
 
-  updatePost(parent, { updateData, id }, { db }, info) {
+  updatePost(parent, { updateData, id }, { db, pubsub }, info) {
     const { title, text, published } = updateData;
 
     let post = db.posts.find((post) => post.id === id);
+    const orginalPost = { ...post };
 
     if (!post) throw new Error('Post not found');
     typeof title === 'string' && (post.title = title);
     typeof text === 'string' && (post.text = text);
-    typeof published === 'string' && (post.published = published);
+    typeof published === 'boolean' && (post.published = published);
+    if (orginalPost.published && !post.published) {
+      pubsub.publish('post', {
+        post: {
+          mutation: 'DELETED',
+          data: orginalPost,
+        },
+      });
+    } else if (!orginalPost.published && post.published) {
+      pubsub.publish('post', {
+        post: {
+          mutation: 'CREATED',
+          data: post,
+        },
+      });
+    } else if (post.published) {
+      pubsub.publish('post', {
+        post: {
+          mutation: 'UPDATED',
+          data: post,
+        },
+      });
+    }
 
     return post;
   },
 
-  updateComment(parent, { updateData, id }, { db }, info) {
+  updateComment(parent, { updateData, id }, { db , pubsub }, info) {
     const { text } = updateData;
 
     let comment = db.comments.find((comment) => comment.id === id);
     if (!comment) throw new Error('Comment not found');
     typeof text === 'string' && (comment.text = text);
 
+    pubsub.publish(`comment ${comment.post}`, {
+      comment: {
+        mutation: 'UPDATED',
+        data: comment,
+      },
+    });
+
     return comment;
   },
 
-  deletePost(parent, { id }, { db }, info) {
+  deletePost(parent, { id }, { db ,pubsub}, info) {
     const postIndex = db.posts.findIndex((post) => post.id === id);
     if (postIndex === -1) throw new Error('Post not found');
 
@@ -115,12 +150,18 @@ const Mutation = {
 
     return post;
   },
-  deleteComment(parent, { id }, { db }, info) {
+  deleteComment(parent, { id }, { db ,  pubsub}, info) {
     const commentIndex = db.comments.findIndex((comment) => comment.id === id);
     if (commentIndex === -1) throw new Error('Comment not found');
 
     const [comment] = db.comments.splice(commentIndex, 1);
 
+    pubsub.publish(`comment ${comment.post}`, {
+      comment: {
+        mutation: 'DELETED',
+        data: comment,
+      },
+    });
     return comment;
   },
 };
