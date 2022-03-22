@@ -16,7 +16,7 @@ const users = [
       id: '2',
       title: 'Post two',
       text: 'This is the text of post two',
-      published: false,
+      published: true,
       author: '1',
     },
     {
