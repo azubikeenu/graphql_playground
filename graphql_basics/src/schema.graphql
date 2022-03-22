@@ -5,6 +5,9 @@ type Query {
   posts(query: String): [Post!]!
   comments: [Comment!]!
 }
+type Subscription {
+  count: Int!
+}
 
 input UserInputData {
   name: String!

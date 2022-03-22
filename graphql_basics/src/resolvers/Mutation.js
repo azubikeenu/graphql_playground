@@ -59,12 +59,9 @@ const Mutation = {
       if (isTaken) throw new Error('Email Taken');
       user.email = email;
     }
-    if (typeof name === 'string') {
-      user.name = name;
-    }
-    if (typeof age !== 'undefined') {
-      user.age = name;
-    }
+    typeof name === 'string' && (user.name = name);
+    age && (user.age = age);
+
     return user;
   },
 
@@ -74,16 +71,9 @@ const Mutation = {
     let post = db.posts.find((post) => post.id === id);
 
     if (!post) throw new Error('Post not found');
-
-    if (typeof title === 'string') {
-      post.title = title;
-    }
-    if (typeof text === 'string') {
-      post.text = text;
-    }
-    if (typeof published === 'boolean') {
-      post.published = published;
-    }
+    typeof title === 'string' && (post.title = title);
+    typeof text === 'string' && (post.text = text);
+    typeof published === 'string' && (post.published = published);
 
     return post;
   },
@@ -92,12 +82,8 @@ const Mutation = {
     const { text } = updateData;
 
     let comment = db.comments.find((comment) => comment.id === id);
-
     if (!comment) throw new Error('Comment not found');
-
-    if (typeof text === 'string') {
-      comment.text = text;
-    }
+    typeof text === 'string' && (comment.text = text);
 
     return comment;
   },
